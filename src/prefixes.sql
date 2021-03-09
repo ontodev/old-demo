@@ -17,6 +17,7 @@ INSERT OR IGNORE INTO prefix VALUES
 ("CHEBI", "http://purl.obolibrary.org/obo/CHEBI_"),
 ("GO", "http://purl.obolibrary.org/obo/GO_"),
 ("NCBITaxon", "http://purl.obolibrary.org/obo/NCBITaxon_"),
+("ncbit", "http://purl.obolibrary.org/obo/ncbitaxon#"),
 ("OBI", "http://purl.obolibrary.org/obo/OBI_"),
 ("PATO", "http://purl.obolibrary.org/obo/PATO_"),
 ("SO", "http://purl.obolibrary.org/obo/SO_"),
