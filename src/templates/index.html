@@ -3,6 +3,10 @@
 <h1 class="mt-3">Ontodev Demo</h1>
 
 <p class="lead">
-  A demonstration of the range of OntoDev tools
+	{% if user %}
+		Welcome {{ user }}! This is a demonstration of the range of OntoDev tools.
+	{% else %}
+		Welcome! Please login to use the tools.
+	{% endif %}
 </p>
 {% endblock %}
