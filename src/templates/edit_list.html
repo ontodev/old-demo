@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-md-center">
+    <div class="col-md-10">
+        {{ message|safe }}
+    </div>
+</div>
+<div class="row justify-content-md-center">
+<div class="col-md-10">
+    <form method="post">
+        <div class="d-flex">
+            <div class="p-2">
+                <h3>Editing {{ list_name }}</h3>
+            </div>
+            <div class="ms-auto p-2">
+                <button class="btn btn-primary" type="submit">Update List</button>
+            </div>
+        </div>
+        <div class="row">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Term ID</th>
+                        <th>Label</th>
+                        <th>Related Terms</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for term in terms %}
+                    <tr>
+                        <td><a href="/browser/{{ term.source }}/{{ term.id }}">{{ term.id }}</a></td>
+                        <td>{{ term.label }}</td>
+                        <td>
+                            <!-- Checkboxes for related entities -->
+                            <div class="form-check form-check-inline">
+                                {% if term.ancestors %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="ancestors" value="ancestors" checked>
+                                {% else %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="ancestors" value="ancestors">
+                                {% endif %}
+                                <label class="form-check-label" for="ancestors"><small>ancestors</small></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                {% if term.descendants %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="descendants" value="descendants" checked>
+                                {% else %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="descendants" value="descendants">
+                                {% endif %}
+                                <label class="form-check-label" for="descendants"><small>descendants</small></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                {% if term.parents %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="parents" value="parents" checked>
+                                {% else %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="parents" value="parents">
+                                {% endif %}
+                                <label class="form-check-label" for="parents"><small>parents</small></label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                {% if term.children %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="children" value="children" checked>
+                                {% else %}
+                                    <input class="form-check-input" type="checkbox" name="{{ term.id }}relatedEntities" id="children" value="children">
+                                {% endif %}
+                                <label class="form-check-label" for="children"><small>children</small></label>
+                            </div>
+                        </td>
+                        <td>
+                            <!-- Checkbox to delete -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="delete{{ term.id }}" id="delete{{ term.id }}">
+                                <label class="form-check-label" for="delete{{ term.id }}">Delete</label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
