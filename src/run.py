@@ -121,7 +121,6 @@ def verify_logged_in(fn):
     """
     Decorator used to make sure that the user is logged in
     """
-
     @functools.wraps(fn)
     def wrapped(*args, **kwargs):
         # If the user is not logged in, then redirect to the "index" page:
@@ -151,7 +150,6 @@ def index():
 @app.route("/browser")
 @verify_logged_in
 def browser():
-    user_id = session.get("user_id")
     html = "<h3>Select a set of terms to browse:</h3>\n"
     html += "  <ul>\n"
     for ns, title in BROWSERS.items():
@@ -238,7 +236,7 @@ def export():
             return abort(400, "Unknown action: " + action)
         redirect(url_for("export"))
     lists = get_user_lists()
-    return render_template("export.html", lists=lists, user=session.get("user_id"), message=message)
+    return render_template("export.html", lists=lists, user=user_id, message=message)
 
 
 @app.route("/export/edit", methods=["GET", "POST"])
@@ -488,7 +486,8 @@ def get_parents(cur, node):
     cur.execute(
         """SELECT DISTINCT object FROM statements
            WHERE stanza = ? predicate = 'rdfs:subClassOf'
-           AND object IS NOT LIKE '_:%'"""
+           AND object IS NOT LIKE '_:%'""",
+        (node,)
     )
     return set([x[0] for x in cur.fetchall()])
 
