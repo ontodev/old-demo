@@ -485,7 +485,7 @@ def get_label(source, node):
 def get_parents(cur, node):
     cur.execute(
         """SELECT DISTINCT object FROM statements
-           WHERE stanza = ? predicate = 'rdfs:subClassOf'
+           WHERE stanza = ? AND predicate = 'rdfs:subClassOf'
            AND object IS NOT LIKE '_:%'""",
         (node,)
     )
