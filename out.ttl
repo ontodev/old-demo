@@ -1,0 +1,122 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix oio: <http://www.geneontology.org/formats/oboInOwl#> .
+@prefix dce: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix obo: <http://purl.obolibrary.org/obo/> .
+@prefix CHEBI: <http://purl.obolibrary.org/obo/CHEBI_> .
+@prefix GO: <http://purl.obolibrary.org/obo/GO_> .
+@prefix NCBITaxon: <http://purl.obolibrary.org/obo/NCBITaxon_> .
+@prefix OBI: <http://purl.obolibrary.org/obo/OBI_> .
+@prefix PATO: <http://purl.obolibrary.org/obo/PATO_> .
+@prefix SO: <http://purl.obolibrary.org/obo/SO_> .
+@prefix UO: <http://purl.obolibrary.org/obo/UO_> .
+@prefix UBERON: <http://purl.obolibrary.org/obo/UBERON_> .
+obo:BFO_0000001 rdf:type owl:Class .
+obo:BFO_0000002 rdf:type owl:Class .
+obo:BFO_0000004 rdf:type owl:Class .
+obo:BFO_0000040 rdf:type owl:Class .
+OBI:0100046 rdf:type owl:Class .
+OBI:0302729 rdf:type owl:Class .
+OBI:0100046 rdfs:subClassOf OBI:0302729 .
+obo:BFO_0000004 rdfs:subClassOf obo:BFO_0000002 .
+OBI:0302729 rdfs:subClassOf obo:BFO_0000040 .
+obo:BFO_0000002 rdfs:subClassOf obo:BFO_0000001 .
+obo:BFO_0000040 rdfs:subClassOf obo:BFO_0000004 .
+OBI:0100046 rdfs:label "phosphate buffered saline solution"@en .
+OBI:0100046 obo:IAO_0000119 "WEB: http://en.wikipedia.org/wiki/Phosphate_buffered_saline"@en .
+OBI:0100046 obo:IAO_0000118 "PBS buffer"@en .
+OBI:0100046 obo:IAO_0000117 "PERSON: Tina Boussard"@en .
+OBI:0100046 obo:IAO_0000117 "PERSON: Philippe Rocca-Serra"^^xsd:string .
+OBI:0100046 obo:IAO_0000117 "PERSON: Melanie Courtot"@en .
+OBI:0100046 obo:IAO_0000115 "Phosphate buffered saline (abbreviated PBS) is a buffer solution commonly used in biochemistry. It is a salty solution containing sodium chloride, sodium phosphate and in some preparations potassium chloride and potassium phosphate. The buffer helps to maintain a constant pH. The concentration usually matches the human body (isotonic)."@en .
+OBI:0100046 obo:IAO_0000112 "PMID: 16279733.Dent Mater J. 2005 Sep;24(3):414-21.PBS buffer solutions with different pH values can change porosity of DNA-chitosan complexes."@en .
+OBI:0100046 obo:IAO_0000111 "phosphate buffered saline solution"@en .
+OBI:0302729 rdfs:label "chemical solution"@en .
+OBI:0302729 obo:IAO_0000119 "GROUP: OBI Biomaterial Branch"^^xsd:string .
+OBI:0302729 obo:IAO_0000118 "liquid chemical solution"@en .
+OBI:0302729 obo:IAO_0000117 "PERSON: Philippe Rocca-Serra"^^xsd:string .
+OBI:0302729 obo:IAO_0000117 "PERSON: Bjoern Peters"^^xsd:string .
+OBI:0302729 obo:IAO_0000115 "A material entity  that is made up of at least 2 scattered molecular aggregates, one playing the role of solvent and the other one playing the role of solute."@en .
+OBI:0302729 obo:IAO_0000112 "PMID: 18289311.Anesth Analg. 2008 Apr;106(4):1078-86.Less impairment of hemostasis and reduced blood loss in pigs after resuscitation from hemorrhagic shock using the small-volume concept with hypertonic saline/hydroxyethyl starch as compared to administration of 4% gelatin or 6% hydroxyethyl starch solution."@en .
+OBI:0302729 obo:IAO_0000111 "chemical solution"@en .
+obo:BFO_0000001 rdfs:label "entity"@en .
+obo:BFO_0000001 obo:IAO_0000600 "An entity is anything that exists or has existed or will exist. (axiom label in BFO2 Reference: [001-001])"@en .
+obo:BFO_0000001 obo:IAO_0000116 "Entity doesn't have a closure axiom because the subclasses don't necessarily exhaust all possibilites. For example Werner Ceusters 'portions of reality' include 4 sorts, entities (as BFO construes them), universals, configurations, and relations. It is an open question as to whether entities as construed in BFO will at some point also include these other portions of reality. See, for example, 'How to track absolutely everything' at http://www.referent-tracking.com/_RTU/papers/CeustersICbookRevised.pdf"@en .
+obo:BFO_0000001 obo:IAO_0000116 "BFO 2 Reference: In all areas of empirical inquiry we encounter general terms of two sorts. First are general terms which refer to universals or types:animaltuberculosissurgical procedurediseaseSecond, are general terms used to refer to groups of entities which instantiate a given universal but do not correspond to the extension of any subuniversal of that universal because there is nothing intrinsic to the entities in question by virtue of which they – and only they – are counted as belonging to the given group. Examples are: animal purchased by the Emperortuberculosis diagnosed on a Wednesdaysurgical procedure performed on a patient from Stockholmperson identified as candidate for clinical trial #2056-555person who is signatory of Form 656-PPVpainting by Leonardo da VinciSuch terms, which represent what are called ‘specializations’ in [81"@en .
+obo:BFO_0000001 obo:IAO_0000112 "your body mass index"@en .
+obo:BFO_0000001 obo:IAO_0000112 "the Second World War"@en .
+obo:BFO_0000001 obo:IAO_0000112 "Verdi’s Requiem"@en .
+obo:BFO_0000001 obo:IAO_0000112 "Julius Caesar"@en .
+obo:BFO_0000001 obo:BFO_0000180 "Entity" .
+obo:BFO_0000001 obo:BFO_0000179 "entity" .
+obo:BFO_0000002 rdfs:label "continuant"@en .
+obo:BFO_0000002 obo:IAO_0000602 "(forall (x) (if (Material Entity x) (exists (t) (and (TemporalRegion t) (existsAt x t))))) // axiom label in BFO2 CLIF: [011-002]" .
+obo:BFO_0000002 obo:IAO_0000602 "(forall (x) (if (Continuant x) (Entity x))) // axiom label in BFO2 CLIF: [008-002]" .
+obo:BFO_0000002 obo:IAO_0000602 "(forall (x y) (if (and (Continuant x) (exists (t) (hasContinuantPartOfAt y x t))) (Continuant y))) // axiom label in BFO2 CLIF: [126-001]" .
+obo:BFO_0000002 obo:IAO_0000602 "(forall (x y) (if (and (Continuant x) (exists (t) (continuantPartOfAt y x t))) (Continuant y))) // axiom label in BFO2 CLIF: [009-002]" .
+obo:BFO_0000002 obo:IAO_0000601 "if b is a material entity, then there is some temporal interval (referred to below as a one-dimensional temporal region) during which b exists. (axiom label in BFO2 Reference: [011-002])"@en .
+obo:BFO_0000002 obo:IAO_0000601 "if b is a continuant and if, for some t, cis continuant_part of b at t, then c is a continuant. (axiom label in BFO2 Reference: [009-002])"@en .
+obo:BFO_0000002 obo:IAO_0000601 "if b is a continuant and if, for some t, c has_continuant_part b at t, then c is a continuant. (axiom label in BFO2 Reference: [126-001])"@en .
+obo:BFO_0000002 obo:IAO_0000600 "A continuant is an entity that persists, endures, or continues to exist through time while maintaining its identity. (axiom label in BFO2 Reference: [008-002])"@en .
+obo:BFO_0000002 obo:IAO_0000116 "Continuant doesn't have a closure axiom because the subclasses don't necessarily exhaust all possibilites. For example, in an expansion involving bringing in some of Ceuster's other portions of reality, questions are raised as to whether universals are continuants"@en .
+obo:BFO_0000002 obo:IAO_0000116 "BFO 2 Reference: Continuant entities are entities which can be sliced to yield parts only along the spatial dimension, yielding for example the parts of your table which we call its legs, its top, its nails. ‘My desk stretches from the window to the door. It has spatial parts, and can be sliced (in space) in two. With respect to time, however, a thing is a continuant.’ [60, p. 240"@en .
+obo:BFO_0000002 obo:IAO_0000115 "An entity that exists in full at any time in which it exists at all, persists through time while maintaining its identity and has no temporal parts."@en .
+obo:BFO_0000002 obo:IAO_0000111 "continuant"@en .
+obo:BFO_0000002 obo:BFO_0000180 "Continuant" .
+obo:BFO_0000002 obo:BFO_0000179 "continuant" .
+obo:BFO_0000004 rdfs:label "independent continuant"@en .
+obo:BFO_0000004 obo:IAO_0000602 "(iff (IndependentContinuant a) (and (Continuant a) (not (exists (b t) (specificallyDependsOnAt a b t))))) // axiom label in BFO2 CLIF: [017-002]" .
+obo:BFO_0000004 obo:IAO_0000602 "(forall (x t) (if (and (IndependentContinuant x) (existsAt x t)) (exists (y) (and (Entity y) (specificallyDependsOnAt y x t))))) // axiom label in BFO2 CLIF: [018-002]" .
+obo:BFO_0000004 obo:IAO_0000602 "(forall (x t) (if (IndependentContinuant x) (exists (r) (and (SpatialRegion r) (locatedInAt x r t))))) // axiom label in BFO2 CLIF: [134-001]" .
+obo:BFO_0000004 obo:IAO_0000601 "For every independent continuant b and time t during the region of time spanned by its life, there are entities which s-depends_on b during t. (axiom label in BFO2 Reference: [018-002])"@en .
+obo:BFO_0000004 obo:IAO_0000601 "For any independent continuant b and any time t there is some spatial region r such that b is located_in r at t. (axiom label in BFO2 Reference: [134-001])"@en .
+obo:BFO_0000004 obo:IAO_0000115 "b is an independent continuant = Def. b is a continuant which is such that there is no c and no t such that b s-depends_on c at t. (axiom label in BFO2 Reference: [017-002])"@en .
+obo:BFO_0000004 obo:IAO_0000115 "A continuant that is a bearer of quality and realizable entity entities, in which other entities inhere and which itself cannot inhere in anything."@en .
+obo:BFO_0000004 obo:IAO_0000112 "the interior of your mouth"@en .
+obo:BFO_0000004 obo:IAO_0000112 "the bottom right portion of a human torso"@en .
+obo:BFO_0000004 obo:IAO_0000112 "an organism"@en .
+obo:BFO_0000004 obo:IAO_0000112 "an orchestra."@en .
+obo:BFO_0000004 obo:IAO_0000112 "an atom"@en .
+obo:BFO_0000004 obo:IAO_0000112 "a spatial region"@en .
+obo:BFO_0000004 obo:IAO_0000112 "a molecule"@en .
+obo:BFO_0000004 obo:IAO_0000112 "a leg"@en .
+obo:BFO_0000004 obo:IAO_0000112 "a heart"@en .
+obo:BFO_0000004 obo:IAO_0000112 "a chair"@en .
+obo:BFO_0000004 obo:BFO_0000180 "IndependentContinuant" .
+obo:BFO_0000004 obo:BFO_0000179 "ic" .
+obo:BFO_0000040 rdfs:label "material entity"@en .
+obo:BFO_0000040 obo:IAO_0000602 "(forall (x) (if (and (Entity x) (exists (y t) (and (MaterialEntity y) (continuantPartOfAt y x t)))) (MaterialEntity x))) // axiom label in BFO2 CLIF: [020-002]" .
+obo:BFO_0000040 obo:IAO_0000602 "(forall (x) (if (and (Entity x) (exists (y t) (and (MaterialEntity y) (continuantPartOfAt x y t)))) (MaterialEntity x))) // axiom label in BFO2 CLIF: [021-002]" .
+obo:BFO_0000040 obo:IAO_0000602 "(forall (x) (if (MaterialEntity x) (IndependentContinuant x))) // axiom label in BFO2 CLIF: [019-002]" .
+obo:BFO_0000040 obo:IAO_0000601 "every entity of which a material entity is continuant part is also a material entity. (axiom label in BFO2 Reference: [021-002])"@en .
+obo:BFO_0000040 obo:IAO_0000601 "Every entity which has a material entity as continuant part is a material entity. (axiom label in BFO2 Reference: [020-002])"@en .
+obo:BFO_0000040 obo:IAO_0000600 "A material entity is an independent continuant that has some portion of matter as proper or improper continuant part. (axiom label in BFO2 Reference: [019-002])"@en .
+obo:BFO_0000040 obo:IAO_0000116 "BFO 2 Reference: ‘Matter’ is intended to encompass both mass and energy (we will address the ontological treatment of portions of energy in a later version of BFO). A portion of matter is anything that includes elementary particles among its proper or improper parts: quarks and leptons, including electrons, as the smallest particles thus far discovered; baryons (including protons and neutrons) at a higher level of granularity; atoms and molecules at still higher levels, forming the cells, organs, organisms and other material entities studied by biologists, the portions of rock studied by geologists, the fossils studied by paleontologists, and so on.Material entities are three-dimensional entities (entities extended in three spatial dimensions), as contrasted with the processes in which they participate, which are four-dimensional entities (entities extended also along the dimension of time).According to the FMA, material entities may have immaterial entities as parts – including the entities identified below as sites; for example the interior (or ‘lumen’) of your small intestine is a part of your body. BFO 2.0 embodies a decision to follow the FMA here."@en .
+obo:BFO_0000040 obo:IAO_0000116 "BFO 2 Reference: Object, Fiat Object Part and Object Aggregate are not intended to be exhaustive of Material Entity. Users are invited to propose new subcategories of Material Entity."@en .
+obo:BFO_0000040 obo:IAO_0000116 "BFO 2 Reference: Material entities (continuants) can preserve their identity even while gaining and losing material parts. Continuants are contrasted with occurrents, which unfold themselves in successive temporal parts or phases [60"@en .
+obo:BFO_0000040 obo:IAO_0000115 "An independent continuant that is spatially extended whose identity is independent of that of other entities and can be maintained through time."@en .
+obo:BFO_0000040 obo:IAO_0000112 "the undetached arm of a human being"@en .
+obo:BFO_0000040 obo:IAO_0000112 "an epidemic"@en .
+obo:BFO_0000040 obo:IAO_0000112 "an energy wave"@en .
+obo:BFO_0000040 obo:IAO_0000112 "an aggregate of human beings."@en .
+obo:BFO_0000040 obo:IAO_0000112 "a tornado"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a sea wave"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a puff of smoke"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a photon"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a hurricane"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a human being"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a forest fire"@en .
+obo:BFO_0000040 obo:IAO_0000112 "a flame"@en .
+obo:BFO_0000040 obo:BFO_0000180 "MaterialEntity" .
+obo:BFO_0000040 obo:BFO_0000179 "material" .
+OBI:0100046 obo:IAO_0000114 obo:IAO_0000122 .
+OBI:0302729 obo:IAO_0000114 obo:IAO_0000122 .
+obo:BFO_0000001 rdfs:isDefinedBy obo:bfo.owl .
+obo:BFO_0000002 rdfs:isDefinedBy obo:bfo.owl .
+obo:BFO_0000002 obo:IAO_0000412 obo:pato.owl .
+obo:BFO_0000004 rdfs:isDefinedBy obo:bfo.owl .
+obo:BFO_0000040 rdfs:isDefinedBy obo:bfo.owl .
