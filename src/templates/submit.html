@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-md-center">
+	<div class="col-md-10">
+		{{ message|safe }}
+		{% if changes %}
+		<p>Changed files:</p>
+		<ul>
+			{% for c in changes %}
+			<li>{{ c }}</li>
+			{% endfor %}
+		</ul>
+		<p><b>Stop!</b> Have you made all the changes you want to make? Once you submit this PR, you will not be able to edit this branch from here again.</p>
+		<div class="row">
+			<form method="get">
+				<input type="hidden" name="submit" value="true">
+				<div class="row g-3">
+					<div class="col-md-6">
+						<div class="row">
+							<label class="form-label">Please enter a title for your new PR:</label>
+						</div>
+						<div class="row">
+							<input type="text" class="form-control" name="prName" style="margin-left:10px;">
+						</div>
+					</div>
+					<div class="col-md-5" style="padding-top:30px; padding-left:30px">
+						<button type="submit" class="btn btn-outline-primary">Create New Pull Request</button>
+					</div>
+				</div>
+			</form>
+		</div>
+		{% else %}
+		<p>There are no changes to submit. You can add terms to imports or add new terms to OBI and return to this page to create a new pull request.</p>
+		{% endif %}
+	</div>
+</div>
+
+{% endblock %}

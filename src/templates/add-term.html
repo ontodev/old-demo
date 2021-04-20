@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row">
+  <h3>{{ title }}</h3>
+  <p style="color: #6c757d">All fields marked with * are required.</p>
+  <hr>
+</div>
+{{ message | safe }}
+<div class="row justify-content-md-center" style="padding-top:10px; padding-bottom:20px;">
+  <div class="col-md-10">
+    <form class="needs-validation" method="get" novalidate>
+      <input type="hidden" name="add" value="true">
+      <h3 style="padding-bottom:20px;">Term Metadata</h3>
+      {{ metadata | safe }}
+      <hr>
+      <h3>Logical Defintion</h3>
+      <p style="padding-bottom: 20px; color: #6c757d;">All terms used in the logical definitions <b>must</b> exist in OBI.</p>
+      {{ logic | safe }}
+      <button type="submit" class="btn btn-large btn-outline-primary">Add New Term</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ message | safe }}
+<div class="row justify-content-md-center" style="padding-top:10px; padding-bottom:20px;">
+  <!-- Search bar -->
+  <div class="col-md-6">
+    <div class="form-row mt-2 mb-2 col-md-11" style="padding-left:0px">
+      <input id="statements-typeahead" class="typeahead form-control" type="text" value="" placeholder="Search"></input>
+    </div>
+  </div>
+  <!-- Import form -->
+  <div class="col-md-6">
+    <form method="get">
+      <div class="row g-3">
+        <input type="hidden" name="add" value="true">
+        <div class="col-md-4" style="padding-top:0px; margin-top:0px;">
+          <label class="form-label" style="margin-bottom: 0px;"><small>Parent Label</small></label>
+          <input type="text" class="typeahead form-control" name="parent" id="parent-typeahead-obi">
+        </div>
+        <div class="col-sm-3">
+          <div class="form-check form-check-inline" id="relatedEntityOptions">
+            <input class="form-check-input" type="checkbox" name="relatedEntities" id="ancestors" value="ancestors">
+            <label class="form-check-label" for="ancestors"><small>ancestors</small></label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="relatedEntities" id="descendants" value="descendants">
+            <label class="form-check-label" for="descendants"><small>descendants</small></label>
+          </div>
+        </div>
+        <div class="col-md-2 right-input">
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="relatedEntities" id="parents" value="parents">
+            <label class="form-check-label" for="parents"><small>parents</small></label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="relatedEntities" id="children" value="children">
+            <label class="form-check-label" for="children"><small>children</small></label>
+          </div>
+        </div>
+        <div class="col-md-3" style="padding-top:7px;">
+          <button type="submit" class="btn btn-outline-primary">Add Term</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row justify-content-md-center">
+  <div class="col-md-12 tree">
+    {{ tree|safe }}
+  </div>
+</div>
+
+{% endblock %}

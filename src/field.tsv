@@ -1,0 +1,34 @@
+table	column	condition	required	category	input type	help
+*	ontology ID		true	metadata	text	A new, unique OBI ID. Use <a href="https://docs.google.com/spreadsheets/d/1tpDrSiO1DlEqkvZjrDSJrMm7OvH9GletljaR-SDeMTI">Term ID Reservations</a> to get the latest ID.
+*	label		true	metadata	text	A new, unique text label describing the term.
+*	alternative term			metadata	text	One or more synonyms separated by a pipe (|)
+*	definition		true	metadata	textarea	A one-sentence textual defintion describing the term.
+*	definition source		true	metadata	text	The source (person, PMID, etc.) of the defintion.
+*	example of usage			metadata	textarea	A brief example of how the term may be used.
+*	term editor		true	metadata	text	One or more names of the term editors separated by a pipe (|)
+*	ontology term requester			metadata	text	The name of the person or group who requested the term.
+*	term tracker item			metadata	text	A link to the GitHub issue tracker where the term was requested.
+*	logical type		true	logic	select(subclass, equivalent)	The type of axiom created from logical defintions.
+assays	parent class			logic	search	The direct, named parent class for this new term.
+assays	material processing technique			logic	search	
+assays	detection technique			logic	search	
+assays	evaluant			logic	search	
+assays	analyte device			logic	search	
+assays	reagent			logic	search	
+assays	molecular label			logic	search	
+assays	input			logic	search	
+assays	output			logic	search	
+assays	target entity			logic	search	
+assays	objective			logic	search	
+assays	associated axioms			logic	textarea	Extra logical axioms to include as subclass or equivalent statements. These must be in <a href="https://www.w3.org/TR/owl2-manchester-syntax/">Manchester Syntax</a>.
+biobank-specimens|biopsy	material anatomical entity			logic	search	
+biobank-specimens	swabbed surface			logic	search	
+biopsy	parent class			logic	search	
+biopsy	input device			logic	search	
+biopsy	output entity			logic	search	
+devices	parent class			logic	search	
+devices	has function			logic	search	
+devices	has part			logic	search	
+devices	part of			logic	search	
+devices	is manufactured by			logic	search	
+devices	associated axioms			logic	search	
