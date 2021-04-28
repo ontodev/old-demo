@@ -1,5 +1,7 @@
 Flask==1.0.2
+git+https://github.com/ontodev/gizmos.git@master
+psycopg2
 PyGithub
 pyjwt
-sqlalchemy
-git+https://github.com/ontodev/gizmos.git@master
+requests
+sqlalchemy==1.3.24

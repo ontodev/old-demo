@@ -11,15 +11,14 @@ import os
 import requests
 import sqlite3
 
-from collections import defaultdict
 from datetime import date, datetime, timezone
-from flask import abort, Flask, g, redirect, render_template, request, Response, session, url_for
+from flask import abort, Flask, redirect, render_template, request, session, url_for
 from github import Github
 from github.GithubException import GithubException
 from sqlalchemy import create_engine, Column, Integer, MetaData, String, Table
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlencode, unquote
 
 # Note that the following environment variables must be set:
 # DATABASE_URI
@@ -274,11 +273,23 @@ def submit():
             body.append("- " + uf)
 
         # Switch to user access token for PR (app can't create PRs)
-        repo = get_repo(user.access_token)
+        try:
+            repo = get_repo(user.access_token)
+        except GithubException as e:
+            err = "Unable to create a new pull request.\nCause: " + str(e) + \
+                      f"\nPlease go to https://github.com/{OBI_REPO}/compare/master...{branch_name}" + \
+                      " to manually create this PR."
+            abort(500, err)
         title = request.args.get("prName") or branch_name
-        pr = repo.create_pull(
-            title=title, body="\n".join(body), head=branch_name, base=OBI_BASE_BRANCH
-        )
+        try:
+            pr = repo.create_pull(
+                title=title, body="\n".join(body), head=branch_name, base=OBI_BASE_BRANCH
+            )
+        except GithubException as e:
+            err = "Unable to create a new pull request.\nCause: " + str(e) + \
+                      f"\nPlease go to https://github.com/{OBI_REPO}/compare/master...{branch_name}" + \
+                      " to manually create this PR."
+            abort(500, err)
 
         html = f'<a href="https://github.com/{OBI_REPO}/pull/{pr.number}">Go to pull request</a>'
         return render_template("base.html", default=html, user=True)
@@ -286,6 +297,104 @@ def submit():
     # Display a list of changed files with option to submit a new PR
     changed_files = get_changed_files(user_id)
     return render_template("submit.html", changes=changed_files, user=True)
+
+
+def locate_term(term_id):
+    for f in os.listdir(TEMPLATES_DIR):
+        if not f.endswith(".tsv"):
+            continue
+        fname = os.path.join(TEMPLATES_DIR, f)
+        with open(fname, "r") as fr:
+            reader = csv.DictReader(fr, delimiter="\t")
+            i = 1
+            for row in reader:
+                i += 1
+                if term_id == row.get("ontology ID"):
+                    return fname, i
+    term_iri = "http://purl.obolibrary.org/obo/" + term_id.replace(":", "_")
+    for f in os.listdir(IMPORTS_DIR):
+        if not f.endswith(".tsv"):
+            continue
+        fname = os.path.join(IMPORTS_DIR, f)
+        i = 0
+        with open(fname, "r") as fr:
+            for line in fr.readlines():
+                i += 1
+                if not line:
+                    continue
+                if line.split(" ")[0].strip() == term_iri:
+                    return fname, i
+    return None, None
+
+
+@app.route("/update")
+@verify_logged_in
+def update():
+    user_id = session.get("user_id")
+    if request.args.get("add"):
+        args = request.args
+        template = args.get("template")
+        term_id = unquote(args.get("ontology-ID"))
+        message = add_to_template(user_id, template, args, exists=True)
+        return render_tree("obi", term_id, message=message, from_update=True)
+
+    term_id = unquote(request.args.get("term"))
+    if not term_id:
+        abort(400, "A term is required in the parameters.")
+    obi_db = os.path.join(DATABASE_DIR, "obi.db")
+    if not os.path.exists(obi_db):
+        abort(500, "A database for obi does not exist")
+    message = ""
+
+    # Find the location of this term
+    fname, line = locate_term(term_id)
+
+    if not fname:
+        # TODO: We need to figure out how best to update this
+        # The term needs to be deleted from obi-edit somehow
+        # Then we can create a temp template and merge that in
+        message = build_message("warning", "Unable to edit non-templated terms at this time.")
+        return render_tree("obi", term_id, message=message, from_update=True)
+
+    elif fname.startswith(TEMPLATES_DIR):
+        # Get the template name & its fields
+        template = os.path.splitext(os.path.basename(fname))[0]
+        metadata_fields, logic_fields = get_template_fields(template)
+
+        # Get the current values for this term from the template
+        with open(fname, "r") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            row = next((x for i, x in enumerate(reader) if i == line - 2), None)
+
+        if not row:
+            abort(500, f"Unable to find row {line} in " + fname)
+
+        metadata_values = {}
+        for field in metadata_fields.keys():
+            metadata_values[field] = row.get(field, "")
+
+        logic_values = {}
+        for field in logic_fields.keys():
+            logic_values[field] = row.get(field, "")
+
+        hidden = {"template": template}
+        metadata_html = build_form_html(metadata_fields, values=metadata_values, hidden=hidden)
+        logic_html = build_form_html(logic_fields, values=logic_values)
+
+        # Term is in a template file - we will get the details and create the form
+        return render_template(
+            "edit-term.html",
+            title=f"Update " + term_id,
+            metadata="\n".join(metadata_html),
+            logic="\n".join(logic_html),
+            message=message,
+            user=True,
+        )
+
+    # TODO: Term is in an import file - we give option to update parent or delete
+    # We also need to determine how to edit an import term that is a specified descendant/ancestor
+    message = build_message("warning", "Unable to edit import terms at this time.")
+    return render_tree("obi", term_id, message=message, from_update=True)
 
 
 # ------------------------------- GITHUB APP ROUTES -------------------------------
@@ -310,11 +419,11 @@ def github_callback():
             return None
 
         content = parse_qs(response.text)
-        access_token = content.get("access_token")
-        if not access_token:
+        token = content.get("access_token")
+        if not token:
             logger.error("Could not retrieve access token")
             return None
-        access_token = access_token[0]
+        token = token[0]
 
         token_type = content.get("token_type")
         if not token_type:
@@ -325,7 +434,7 @@ def github_callback():
             logger.error("Unexpected token type retrieved: " + token_type)
             return None
 
-        return access_token
+        return token
 
     if request.args.get("state") != GITHUB_APP_STATE:
         logging.error("Received wrong state. Aborting authorization due to possible CSRF attack.")
@@ -393,7 +502,7 @@ def add_to_import(user_id, ns, term_id, args):
     db = os.path.join(DATABASE_DIR, ns + ".db")
     if not os.path.exists(db):
         abort(500, f"A database for {ns} does not exist")
-    message = ""
+
     with sqlite3.connect(db) as conn:
         # Get a label to display in import file
         label = ""
@@ -491,7 +600,7 @@ def add_to_import(user_id, ns, term_id, args):
     return build_message("success", f"'{label}' ({term_id}) added to {db} import!")
 
 
-def add_to_template(user_id, template, args):
+def add_to_template(user_id, template, args, exists=False):
     """Add a new term to the given template based on the request args provided."""
     user_dir = "build/" + str(user_id)
     if not os.path.exists(user_dir):
@@ -514,18 +623,24 @@ def add_to_template(user_id, template, args):
         headers = reader.fieldnames
         for row in reader:
             if row["ontology ID"] == term_id:
-                existing_label = row["label"]
-                return build_message(
-                    "danger",
-                    f"Cannot add '{term_label}' ({term_id}) to {template} template; "
-                    + f"{term_id} already exists in template as '{existing_label}'.",
-                )
+                if exists:
+                    # Skip row
+                    continue
+                else:
+                    existing_label = row["label"]
+                    return build_message(
+                        "danger",
+                        f"Cannot add '{term_label}' ({term_id}) to {template} template; "
+                        + f"{term_id} already exists in template as '{existing_label}'.",
+                    )
             rows.append(row)
 
     add_row = {}
     bad = []
     for header, value in args.items():
         header = header.replace("-", " ")
+        if header == "template":
+            continue
         if header not in headers:
             bad.append(header)
             continue
@@ -548,71 +663,93 @@ def add_to_template(user_id, template, args):
 
     # Always write to the user's version of the template file
     with open(user_template_file, "w") as f:
-        logging.info(headers)
-        writer = csv.DictWriter(f, delimiter="\t", lineterminator="\n",  quoting=csv.QUOTE_NONE, escapechar='"', fieldnames=headers)
+        writer = csv.DictWriter(
+            f,
+            delimiter="\t",
+            lineterminator="\n",
+            quoting=csv.QUOTE_NONE,
+            escapechar='"',
+            fieldnames=headers,
+        )
         writer.writeheader()
         writer.writerows(rows)
+    if exists:
+        verb = "updated"
+    else:
+        verb = "added"
     return build_message(
-        "success", f"Successfully added '{term_label}' ({term_id}) to {template} template!"
+        "success", f"Successfully {verb} '{term_label}' ({term_id}) in {template} template!"
     )
 
 
-def build_form_field(input_type, column, help_msg, required):
+def build_form_field(input_type, column, help_msg, required, value=None):
     """Return an HTML form field for a template field."""
     if required:
         display = column + " *"
     else:
         display = column
 
-    html = []
-    html.append('<div class="row mb-3">')
-    html.append(f'\t<label class="col-sm-2 col-form-label">{display}</label>')
-    html.append('\t<div class="col-sm-10">')
+    html = [
+        '<div class="row mb-3">',
+        f'\t<label class="col-sm-2 col-form-label">{display}</label>',
+        '\t<div class="col-sm-10">',
+    ]
 
     field_name = column.replace(" ", "-")
+
+    value_html = ""
+    if value:
+        value_html = f' value="{value}"'
+    if not value:
+        value = ""
 
     if input_type == "text":
         if required:
             html.append(
-                f'\t\t<input type="text" class="form-control" name="{field_name}" required>'
+                f'\t\t<input type="text" class="form-control" name="{field_name}" required{value_html}>'
             )
             html.append('\t\t<div class="invalid-feedback">')
             html.append(f"\t\t\t{column} is required")
             html.append("</div>")
         else:
-            html.append(f'\t\t<input type="text" class="form-control" name="{field_name}">')
+            html.append(f'\t\t<input type="text" class="form-control" name="{field_name}"{value_html}>')
 
     elif input_type == "textarea":
         if required:
             html.append(
-                f'\t\t<textarea class="form-control" name="{field_name}" rows="3" required></textarea>'
+                f'\t\t<textarea class="form-control" name="{field_name}" rows="3" required>{value}</textarea>'
             )
             html.append('\t\t<div class="invalid-feedback">')
             html.append(f"\t\t\t{column} is required")
             html.append("</div>")
         else:
             html.append(
-                f'\t\t<textarea class="form-control" name="{field_name}" rows="3"></textarea>'
+                f'\t\t<textarea class="form-control" name="{field_name}" rows="3">{value}</textarea>'
             )
 
     elif input_type == "search":
         if required:
             html.append(
-                f'<input type="text" class="searc form-control" name="{field_name}" id="{field_name}-typeahead-obi" required>'
+                f'<input type="text" class="searc form-control" name="{field_name}" '
+                + f'id="{field_name}-typeahead-obi" required{value_html}>'
             )
             html.append('\t\t<div class="invalid-feedback">')
             html.append(f"\t\t\t{column} is required")
             html.append("</div>")
         else:
             html.append(
-                f'<input type="text" class="typeahead form-control" name="{field_name}" id="{field_name}-typeahead-obi">'
+                f'<input type="text" class="typeahead form-control" name="{field_name}" '
+                + f'id="{field_name}-typeahead-obi"{value_html}>'
             )
 
     elif input_type.startswith("select"):
         selects = input_type.split("(", 1)[1].rstrip(")").split(", ")
         html.append(f'\t\t<select class="form-select" name="{field_name}">')
         for s in selects:
-            html.append(f'\t\t\t<option value="{s}">{s}</option>')
+            if s == value:
+                html.append(f'\t\t\t<option value="{s}" selected>{s}</option>')
+            else:
+                html.append(f'\t\t\t<option value="{s}">{s}</option>')
         html.append("\t\t</select>")
 
     else:
@@ -625,6 +762,23 @@ def build_form_field(input_type, column, help_msg, required):
     return html
 
 
+def build_form_html(fields, values=None, hidden=None):
+    html = []
+    if hidden:
+        for name, value in hidden.items():
+            html.append(f'<input type="hidden" name="{name}" value="{value}">')
+    for field, details in fields.items():
+        input_type = details["type"]
+        value = None
+        if values:
+            value = values[field]
+        form_field = build_form_field(input_type, field, details["help"], details["required"], value=value)
+        if not form_field:
+            abort(500, f"Unknown input type '{input_type}' for column '{field}'")
+        html.extend(form_field)
+    return html
+
+
 def build_message(message_type, message_content):
     """Return a pop-up message to display at the top of the page."""
     message = f'<div class="alert alert-{message_type} alert-dismissible fade show" role="alert">\n'
@@ -634,8 +788,7 @@ def build_message(message_type, message_content):
     return message
 
 
-def build_template(template, message=""):
-    """Build an HTML form template from the template fields."""
+def get_template_fields(template):
     metadata_fields = {}
     logic_fields = {}
     with open("src/field.tsv", "r") as f:
@@ -660,30 +813,23 @@ def build_template(template, message=""):
                     "help": row.get("help", "").strip(),
                     "required": bool(row.get("required", "false").strip()),
                 }
+    return metadata_fields, logic_fields
 
-    metadata_html = []
-    for column, details in metadata_fields.items():
-        input_type = details["type"]
-        form_field = build_form_field(input_type, column, details["help"], details["required"])
-        if not form_field:
-            abort(500, f"Unknown input type '{input_type}' for column '{column}'")
-        metadata_html.extend(form_field)
 
-    logic_html = []
-    for column, details in logic_fields.items():
-        input_type = details["type"]
-        form_field = build_form_field(input_type, column, details["help"], details["required"])
-        if not form_field:
-            abort(500, f"Unknown input type '{input_type}' for column '{column}'")
-        logic_html.extend(form_field)
+def build_template(template, message=""):
+    """Build an HTML form template from the template fields."""
+    metadata_fields, logic_fields = get_template_fields(template)
+
+    metadata_html = build_form_html(metadata_fields)
+    logic_html = build_form_html(logic_fields)
 
     return render_template(
-        "add-term.html",
+        "edit-term.html",
         title=f"New '{template}' Term",
         metadata="\n".join(metadata_html),
         logic="\n".join(logic_html),
         message=message,
-        user=True
+        user=True,
     )
 
 
@@ -787,16 +933,19 @@ def get_installation_token():
 
 def get_repo(token):
     """Create the Github object for the target repository."""
+    logging.info(token)
     api = Github(token)
     repo = api.get_repo(OBI_REPO)
     return repo
 
 
-def github_call(method, endpoint, access_token, params={}):
+def github_call(method, endpoint, access_token, params=None):
     """
     Call the GitHub REST API at the given endpoint using the given method and passing the given
     params.
     """
+    if not params:
+        params = {}
     method = method.casefold()
     if method not in ["get", "post", "put"]:
         logger.error(f"Unsupported API method: {method}")
@@ -817,6 +966,9 @@ def github_call(method, endpoint, access_token, params={}):
         response = requests.post(**fargs)
     elif method == "put":
         response = requests.put(**fargs)
+    else:
+        logger.error("Unknown response method: " + method)
+        return {}
 
     if not response.ok:
         if response.status_code == 403:
@@ -842,7 +994,7 @@ def github_authorize_token(params):
     return response
 
 
-def render_tree(ns, term_id, message="", is_import=False):
+def render_tree(ns, term_id, message="", is_import=False, from_update=False):
     """Render the HTML tree for a given term (or top level, when term_id is None)."""
     db = os.path.join(DATABASE_DIR, ns + ".db")
     if not os.path.exists(db):
@@ -852,7 +1004,7 @@ def render_tree(ns, term_id, message="", is_import=False):
     base = "browse"
     if is_import:
         base = ns
-    if not term_id:
+    if not term_id or from_update:
         href = base + "/{curie}"
     else:
         href = "./{curie}"

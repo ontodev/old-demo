@@ -13,7 +13,8 @@ assays	parent class			logic	search	The direct, named parent class for this new t
 assays	material processing technique			logic	search	
 assays	detection technique			logic	search	
 assays	evaluant			logic	search	
-assays	analyte device			logic	search	
+assays	analyte			logic	search	
+assays	device			logic	search	
 assays	reagent			logic	search	
 assays	molecular label			logic	search	
 assays	input			logic	search	

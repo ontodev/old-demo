@@ -6,15 +6,36 @@
 <div class="row justify-content-md-center" style="padding-top:10px; padding-bottom:20px;">
   <div class="col-md-10">
   	<div class="form-row mt-2 mb-2">
-      	<input id="statements-typeahead" class="typeahead form-control" type="text" value="" placeholder="Search"></input>
+        <input id="statements-typeahead" class="typeahead form-control" type="text" value="" placeholder="Search"/>
       </div>
   </div>
 </div>
-
 <div class="row justify-content-md-center">
   <div class="col-md-10 tree">
+      <div class="row">
+          <div class="col-md-12">
+              <div class="float-end">
+                  <form action="/update">
+                      <input id="submitTermID" type="hidden" name="term" value="">
+                      <button id="submitUpdate" type="submit" class="btn btn-primary">Update Term</button>
+                  </form>
+              </div>
+          </div>
+      </div>
     {{ tree|safe }}
   </div>
 </div>
+
+<script>
+    let loc = window.location.href;
+    let termID = loc.split("/").slice(-1)[0];
+    if (termID === "browse") {
+        let btn = document.getElementById("submitUpdate");
+        btn.disabled = true;
+    } else {
+        let input = document.getElementById("submitTermID");
+        input.setAttribute("value", termID);
+    }
+</script>
 
 {% endblock %}
