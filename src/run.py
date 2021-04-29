@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import csv
+import difflib
 import functools
 import gizmos.search
 import gizmos.tree
@@ -294,37 +295,29 @@ def submit():
         html = f'<a href="https://github.com/{OBI_REPO}/pull/{pr.number}">Go to pull request</a>'
         return render_template("base.html", default=html, user=True)
 
+    message = ""
+    discard_file = request.args.get("discard")
+    if discard_file:
+        # TODO: delete from changes table & delete file in user dir
+        changed_file = os.path.join("build", str(user_id), discard_file + ".tsv")
+        if not os.path.exists(changed_file):
+            abort(500, f"Cannot find changed file: {discard_file}.tsv")
+        os.remove(changed_file)
+        change = Change.query.filter_by(user_id=user_id, file=discard_file + ".tsv").first()
+        if change:
+            db_session.delete(change)
+            db_session.commit()
+        else:
+            logging.warning(f"A changed file for {discard_file}.tsv exists, but is not recorded.")
+        message = build_message("success", f"Sucessfully removed changes to {discard_file}.tsv!")
+
     # Display a list of changed files with option to submit a new PR
     changed_files = get_changed_files(user_id)
-    return render_template("submit.html", changes=changed_files, user=True)
-
-
-def locate_term(term_id):
-    for f in os.listdir(TEMPLATES_DIR):
-        if not f.endswith(".tsv"):
-            continue
-        fname = os.path.join(TEMPLATES_DIR, f)
-        with open(fname, "r") as fr:
-            reader = csv.DictReader(fr, delimiter="\t")
-            i = 1
-            for row in reader:
-                i += 1
-                if term_id == row.get("ontology ID"):
-                    return fname, i
-    term_iri = "http://purl.obolibrary.org/obo/" + term_id.replace(":", "_")
-    for f in os.listdir(IMPORTS_DIR):
-        if not f.endswith(".tsv"):
-            continue
-        fname = os.path.join(IMPORTS_DIR, f)
-        i = 0
-        with open(fname, "r") as fr:
-            for line in fr.readlines():
-                i += 1
-                if not line:
-                    continue
-                if line.split(" ")[0].strip() == term_iri:
-                    return fname, i
-    return None, None
+    fname_paths = []
+    for cf in changed_files:
+        fname = os.path.splitext(os.path.basename(cf))[0]
+        fname_paths.append({"name": fname, "path": cf})
+    return render_template("submit.html", changes=fname_paths, message=message, user=True)
 
 
 @app.route("/update")
@@ -395,6 +388,42 @@ def update():
     # We also need to determine how to edit an import term that is a specified descendant/ancestor
     message = build_message("warning", "Unable to edit import terms at this time.")
     return render_tree("obi", term_id, message=message, from_update=True)
+
+
+@app.route("/submit/<name>")
+@verify_logged_in
+def view_diff(name):
+    # TODO - eventually add support for obi-edit diff here
+    user_id = session.get("user_id")
+    source_dir = TEMPLATES_DIR
+    dir_display = "src/ontology/templates/"
+    if name.endswith("_terms"):
+        source_dir = IMPORTS_DIR
+        dir_display = "src/ontology/imports/"
+    source_file = open(os.path.join(source_dir, name + ".tsv"))
+    changed_file = open(os.path.join("build", str(user_id), name + ".tsv"))
+    diff = difflib.ndiff(source_file.readlines(), changed_file.readlines())
+    source_file.close()
+    changed_file.close()
+    headers = []
+    rows = []
+    if diff:
+        headers = next(diff).strip().split("\t")
+        headers.insert(0, "")
+        rows = []
+        for line in diff:
+            if not line.startswith(" ") and not line.startswith("?"):
+                change = line[:2].strip()
+                contents = line[2:].strip().split("\t")
+                contents.insert(0, change)
+                if len(contents) < len(headers):
+                    diff_len = len(headers) - len(contents)
+                    i = 0
+                    while i < diff_len:
+                        i += 1
+                        contents.append("")
+                rows.append(contents)
+    return render_template("diff.html", filename=os.path.join(dir_display, name + ".tsv"), headers=headers, rows=rows)
 
 
 # ------------------------------- GITHUB APP ROUTES -------------------------------
@@ -992,6 +1021,34 @@ def github_authorize_token(params):
     if not response.ok:
         response.raise_for_status()
     return response
+
+
+def locate_term(term_id):
+    for f in os.listdir(TEMPLATES_DIR):
+        if not f.endswith(".tsv"):
+            continue
+        fname = os.path.join(TEMPLATES_DIR, f)
+        with open(fname, "r") as fr:
+            reader = csv.DictReader(fr, delimiter="\t")
+            i = 1
+            for row in reader:
+                i += 1
+                if term_id == row.get("ontology ID"):
+                    return fname, i
+    term_iri = "http://purl.obolibrary.org/obo/" + term_id.replace(":", "_")
+    for f in os.listdir(IMPORTS_DIR):
+        if not f.endswith(".tsv"):
+            continue
+        fname = os.path.join(IMPORTS_DIR, f)
+        i = 0
+        with open(fname, "r") as fr:
+            for line in fr.readlines():
+                i += 1
+                if not line:
+                    continue
+                if line.split(" ")[0].strip() == term_iri:
+                    return fname, i
+    return None, None
 
 
 def render_tree(ns, term_id, message="", is_import=False, from_update=False):
