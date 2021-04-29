@@ -5,11 +5,17 @@ A demonstration of the range of OntoDev tools
 
 In order to run this app, you must first create a [GitHub App](https://docs.github.com/en/developers/apps/about-apps). When setting up your GitHub App, set the **Callback URL** to `HOST/github_callback` where `HOST` is replaced with wherever you're running this (Flask defaults to `localhost:5000`, so this will most likely be `http://localhost:5000/github_callback`). Also check the box that says **Request user authorization (OAuth) during installation**.
 
+Make sure to give your app the "Read & write" permissions to the following:
+* Contents
+* Issues
+* Pull requests
+
 Once created, you need to generate a new client secret and a new private key. Copy the client secret to somewhere safe and save the private key `.pem` file to a location of your choice.
 
 Before starting the demo, set the following environment variables:
 * `DATABASE_URI`: path to the SQLite database that backs the application; this should start with `sqlite:///` followed by the absolute path, e.g. `sqlite:////tmp/test.db`).
 * `DROID_PATH`: path to the DROID directory to use for the base versions of resources, including all databases
+* `GITHUB_APP_ID`: the numeric App ID from the **About** section of your app settingss
 * `GITHUB_APP_STATE`: an unguessable random string used to protect against cross-site request forgery attacks.
 * `GITHUB_CLIENT_ID`: the client ID of your GitHub App, which can be found in the **About** section of the app settings.
 * `GITHUB_CLIENT_SECRET`: the client secret you generated after setting up your GitHub App (the string itself, not a path to a file containing the secret).
