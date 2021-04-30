@@ -112,7 +112,7 @@ app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY
 
 # Setup sqlalchemy to manage the database of logged in users
-engine = create_engine(DATABASE_URI, connect_args={'check_same_thread': False})
+engine = create_engine(DATABASE_URI, connect_args={"check_same_thread": False})
 db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 Base = declarative_base()
 Base.query = db_session.query_property()
@@ -277,9 +277,12 @@ def submit():
         try:
             repo = get_repo(user.access_token)
         except GithubException as e:
-            err = "Unable to create a new pull request.\nCause: " + str(e) + \
-                      f"\nPlease go to https://github.com/{OBI_REPO}/compare/master...{branch_name}" + \
-                      " to manually create this PR."
+            err = (
+                "Unable to create a new pull request.\nCause: "
+                + str(e)
+                + f"\nPlease go to https://github.com/{OBI_REPO}/compare/master...{branch_name}"
+                + " to manually create this PR."
+            )
             abort(500, err)
         title = request.args.get("prName") or branch_name
         try:
@@ -287,9 +290,12 @@ def submit():
                 title=title, body="\n".join(body), head=branch_name, base=OBI_BASE_BRANCH
             )
         except GithubException as e:
-            err = "Unable to create a new pull request.\nCause: " + str(e) + \
-                      f"\nPlease go to https://github.com/{OBI_REPO}/compare/master...{branch_name}" + \
-                      " to manually create this PR."
+            err = (
+                "Unable to create a new pull request.\nCause: "
+                + str(e)
+                + f"\nPlease go to https://github.com/{OBI_REPO}/compare/master...{branch_name}"
+                + " to manually create this PR."
+            )
             abort(500, err)
 
         html = f'<a href="https://github.com/{OBI_REPO}/pull/{pr.number}">Go to pull request</a>'
@@ -423,7 +429,13 @@ def view_diff(name):
                         i += 1
                         contents.append("")
                 rows.append(contents)
-    return render_template("diff.html", filename=os.path.join(dir_display, name + ".tsv"), headers=headers, rows=rows)
+    return render_template(
+        "diff.html",
+        filename=os.path.join(dir_display, name + ".tsv"),
+        headers=headers,
+        rows=rows,
+        user=True,
+    )
 
 
 # ------------------------------- GITHUB APP ROUTES -------------------------------
@@ -741,7 +753,9 @@ def build_form_field(input_type, column, help_msg, required, value=None):
             html.append(f"\t\t\t{column} is required")
             html.append("</div>")
         else:
-            html.append(f'\t\t<input type="text" class="form-control" name="{field_name}"{value_html}>')
+            html.append(
+                f'\t\t<input type="text" class="form-control" name="{field_name}"{value_html}>'
+            )
 
     elif input_type == "textarea":
         if required:
@@ -801,7 +815,9 @@ def build_form_html(fields, values=None, hidden=None):
         value = None
         if values:
             value = values[field]
-        form_field = build_form_field(input_type, field, details["help"], details["required"], value=value)
+        form_field = build_form_field(
+            input_type, field, details["help"], details["required"], value=value
+        )
         if not form_field:
             abort(500, f"Unknown input type '{input_type}' for column '{field}'")
         html.extend(form_field)
