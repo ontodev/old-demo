@@ -3,7 +3,7 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <table class="table" id="diffTable">
+        <table class="table" id="displayTable">
             <thead>
                 {% for h in headers %}
                 <th>{{ h }}</th>
@@ -13,17 +13,23 @@
                 {% for r in rows %}
                 <tr>
                     {% for cell in r %}
-                    <td>{{ cell }}</td>
+                    <td>{{ cell|safe }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if export %}
+        <div class="row float-end">
+            <p class="small">Export as: <a href="export?format=tsv">TSV</a> | <a href="export?format=csv">CSV</a></p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
-    let table = document.getElementById("diffTable");
+    // Colors for diffing
+    let table = document.getElementById("displayTable");
     console.log(table.rows);
     for (let i = 0; i <= table.rows.length; i ++) {
         let row = table.rows[i];

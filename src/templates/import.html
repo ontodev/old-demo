@@ -6,10 +6,11 @@
   <!-- Search bar -->
   <div class="col-md-6">
     <div class="form-row mt-2 mb-2 col-md-11" style="padding-left:0px">
-      <input id="statements-typeahead" class="typeahead form-control" type="text" value="" placeholder="Search"></input>
+      <input id="statements-typeahead" class="typeahead form-control" type="text" value="" placeholder="Search"/>
     </div>
   </div>
   <!-- Import form -->
+  {% if user %}
   <div class="col-md-6">
     <form method="get">
       <div class="row g-3">
@@ -44,6 +45,7 @@
       </div>
     </form>
   </div>
+  {% endif %}
 </div>
 
 <div class="row justify-content-md-center">

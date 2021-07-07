@@ -3,6 +3,7 @@
 import csv
 import difflib
 import functools
+import gizmos.export as export
 import gizmos.search
 import gizmos.tree
 import json
@@ -13,9 +14,10 @@ import requests
 import sqlite3
 
 from datetime import date, datetime, timezone
-from flask import abort, Flask, redirect, render_template, request, session, url_for
+from flask import abort, Flask, redirect, render_template, request, Response, session, url_for
 from github import Github
 from github.GithubException import GithubException
+from io import StringIO
 from sqlalchemy import create_engine, Column, Integer, MetaData, String, Table
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -141,6 +143,16 @@ if not engine.dialect.has_table(engine, "changes"):
         Column("file_type", String(255)),
     )
     meta.create_all(engine)
+if not engine.dialect.has_table(engine, "exports"):
+    logging.info("Creating 'exports' table...")
+    exports_table = Table(
+        "exports",
+        meta,
+        Column("id", Integer, primary_key=True),
+        Column("user_id", Integer),
+        Column("term_id", String(255)),
+    )
+    meta.create_all(engine)
 
 # Make sure we have the build directory
 if not os.path.exists("build"):
@@ -192,25 +204,129 @@ def add_term(template):
 
 
 @app.route("/browse")
-@verify_logged_in
 def browse_obi():
     return render_tree("obi", None)
 
 
-@app.route("/browse/<term_id>")
-@verify_logged_in
+@app.route("/browse/<term_id>", methods=["GET", "POST"])
 def browse_obi_at(term_id):
-    return render_tree("obi", term_id)
+    message = ""
+    if request.method == "POST":
+        term_id = request.form.get("term")
+        if not term_id:
+            abort(500, "A term ID was not specified")
+        # Add term to user's list
+        user_id = session.get("user_id")
+        exports = Export.query.filter_by(user_id=user_id)
+        for e in exports:
+            if e.term_id == term_id:
+                message = build_message(
+                    "warning",
+                    "This term already exists in your export! Click 'Export' to view all export terms."
+                )
+                return render_tree("obi", term_id, message=message)
+        e = Export(user_id, term_id)
+        db_session.add(e)
+        db_session.commit()
+        message = build_message("success", "Term added to export! Click 'Export' to view all export terms.")
+    return render_tree("obi", term_id, message=message)
+
+
+@app.route("/export")
+@verify_logged_in
+def show_export():
+    remove_term = request.args.get("remove")
+    # Get the terms to display
+    user_id = session.get("user_id")
+    exports = Export.query.filter_by(user_id=user_id)
+    terms = []
+    for e in exports:
+        if not e.term_id:
+            logging.info("Missing term_id, removing export entry")
+            db_session.delete(e)
+            db_session.commit()
+        elif e.term_id == remove_term:
+            logging.info("Removing " + remove_term)
+            db_session.delete(e)
+            db_session.commit()
+        else:
+            terms.append(e.term_id)
+    logging.info(terms)
+    if not terms:
+        return render_template("base.html", default="There are no terms to export.", user=True)
+    terms = sorted(terms)
+
+    # Get annotation properties from OBI
+    obi_db = os.path.join(DATABASE_DIR, "obi.db")
+    if not os.path.exists(obi_db):
+        abort(400, "build/obi.db must exist in DROID directory for exporting")
+    with sqlite3.connect(obi_db) as conn:
+        cur = conn.cursor()
+        aps = get_annotation_properties(cur)
+        aps.update({"CURIE": "ontology ID", "rdfs:label": "label", "rdfs:subClassOf": "parent class", "owl:equivalentClass": "equivalent class", "owl:disjointWith": "disjoint class"})
+        cur.close()
+    with sqlite3.connect(obi_db) as conn:
+        # TODO - make display configurable, display as label, IRI, or CURIE
+        export_table = export.export_terms(conn, terms, aps.keys(), "tsv", default_value_format="label")
+
+    # Only include headers with values
+    f = StringIO(export_table)
+    reader = csv.DictReader(f, delimiter="\t")
+    headers = set()
+    rows = []
+    for row in reader:
+        new_itm = {}
+        for k, v in row.items():
+            if v:
+                ap_label = aps[k]
+                new_itm[ap_label] = v
+                headers.add(ap_label)
+        rows.append(new_itm)
+
+    # Sort headers alphabetically
+    headers = sorted(headers)
+    # Place ID first then label
+    headers.remove("label")
+    headers.insert(0, "label")
+    headers.remove("ontology ID")
+    headers.insert(0, "ontology ID")
+
+    rows_fixed = []
+    for row in rows:
+        new_row = []
+        term_id = None
+        for h in headers:
+            if h == "ontology ID":
+                term_id = row[h]
+            new_row.append(row.get(h, ""))
+        new_row.insert(0, f'<a href="export?remove={term_id}">x</a>')
+        rows_fixed.append(new_row)
+    headers.insert(0, "")
+
+    export_fmt = request.args.get("format")
+    if export_fmt:
+        fw = StringIO()
+        sep = "\t"
+        mt = "text/tab-separated-values"
+        if export_fmt == "csv":
+            sep = ","
+            mt = "text/comma-separated-values"
+        elif export_fmt != "tsv":
+            abort(400, "Not a valid export format: " + export_fmt)
+        writer = csv.DictWriter(fw, delimiter=sep, lineterminator="\n", fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(rows)
+        return Response(fw.getvalue(), mimetype=mt)
+
+    return render_template("table.html", headers=headers, rows=rows_fixed, export=True, user=True)
 
 
 @app.route("/import/<ns>")
-@verify_logged_in
 def browse_import(ns):
     return render_tree(ns, None, is_import=True)
 
 
 @app.route("/import/<ns>/<term_id>")
-@verify_logged_in
 def browse_import_at(ns, term_id):
     message = ""
     if request.args.get("add"):
@@ -220,7 +336,6 @@ def browse_import_at(ns, term_id):
 
 
 @app.route("/search")
-@verify_logged_in
 def search():
     text = request.args.get("text", "")
     ns = request.args.get("db")
@@ -228,7 +343,7 @@ def search():
         abort(400, "A db parameter is required for search")
     db = os.path.join(DATABASE_DIR, ns + ".db")
     if not os.path.exists(db):
-        abort(500, f"A database for {ns} does not exist")
+        abort(500, f"A database for {ns} does not exist at {db}")
     conn = sqlite3.connect(db)
     return gizmos.search.search(conn, text, limit=30)
 
@@ -304,7 +419,6 @@ def submit():
     message = ""
     discard_file = request.args.get("discard")
     if discard_file:
-        # TODO: delete from changes table & delete file in user dir
         changed_file = os.path.join("build", str(user_id), discard_file + ".tsv")
         if not os.path.exists(changed_file):
             abort(500, f"Cannot find changed file: {discard_file}.tsv")
@@ -326,6 +440,44 @@ def submit():
     return render_template("submit.html", changes=fname_paths, message=message, user=True)
 
 
+def get_annotation_properties(cur, labels=True):
+    cur.execute(
+        """SELECT DISTINCT s2.stanza FROM statements s1
+        JOIN statements s2 ON s1.predicate = s2.stanza
+        WHERE s1.value IS NOT NULL"""
+    )
+    if not labels:
+        return [x[0] for x in cur.fetchall() if not (
+            x[0].startswith("dct:")
+            or x[0].startswith("foaf:")
+            or x[0].startswith("owl:")
+            or x[0].startswith("<")
+            or x[0] == "rdfs:label"
+        )]
+    aps = {}
+    for res in cur.fetchall():
+        ap_id = res[0]
+        # Skip some ontology-level APs, as well as label which we add later
+        if (
+            ap_id.startswith("dct:")
+            or ap_id.startswith("foaf:")
+            or ap_id.startswith("owl:")
+            or ap_id.startswith("<")
+            or ap_id == "rdfs:label"
+        ):
+            continue
+        cur.execute(
+            "SELECT value FROM statements WHERE stanza = ? AND predicate = 'rdfs:label' ORDER BY value",
+            (ap_id,),
+        )
+        res = cur.fetchone()
+        if res:
+            aps[ap_id] = res[0]
+        else:
+            aps[ap_id] = ap_id
+    return aps
+
+
 @app.route("/update")
 @verify_logged_in
 def update():
@@ -342,18 +494,102 @@ def update():
         abort(400, "A term is required in the parameters.")
     obi_db = os.path.join(DATABASE_DIR, "obi.db")
     if not os.path.exists(obi_db):
-        abort(500, "A database for obi does not exist")
+        abort(400, "build/obi.db must exist in DROID directory for term updating")
     message = ""
 
     # Find the location of this term
     fname, line = locate_term(term_id)
 
-    if not fname:
-        # TODO: We need to figure out how best to update this
-        # The term needs to be deleted from obi-edit somehow
-        # Then we can create a temp template and merge that in
-        message = build_message("warning", "Unable to edit non-templated terms at this time.")
-        return render_tree("obi", term_id, message=message, from_update=True)
+    if fname == "build/obi-edit.db":
+        obi_db = os.path.join(DATABASE_DIR, "obi.db")
+        if not os.path.exists(obi_db):
+            abort(400, "build/obi.db must exist in DROID directory for term updating")
+        with sqlite3.connect(obi_db) as conn:
+            # Get the annotation properties that we want
+            cur = conn.cursor()
+            aps = get_annotation_properties(cur)
+            # Get the term label
+            cur.execute(
+                "SELECT value FROM statements WHERE stanza = ? AND predicate = 'rdfs:label'",
+                (term_id,),
+            )
+            res = cur.fetchone()
+            label = None
+            if res:
+                label = res[0]
+            # Close the cursor to unlock the database
+            cur.close()
+            # Export annotations
+            annotations = export.export_terms(
+                conn, [term_id], sorted(aps.keys()), "tsv", default_value_format="label"
+            )
+            # Export logic
+            logic = export.export_terms(
+                conn,
+                [term_id],
+                ["rdfs:subClassOf", "owl:equivalentClass"],
+                "tsv",
+                default_value_format="label",
+                no_headers=True,
+            )
+        ann_headers = annotations.split("\n")[0].split("\t")
+        ann_details = annotations.split("\n")[1].split("\t")
+        logic_details = logic.strip().split("\t")
+
+        metadata_html = []
+        # Add the ontology ID element
+        field = build_form_field("text", "ontology ID", None, True, value=term_id)
+        if field:
+            metadata_html.extend(field)
+        # Add the label element
+        field = build_form_field("text", "label", None, True, value=label)
+        if field:
+            metadata_html.extend(field)
+        # Add the rest of the annotations
+        i = 0
+        while i < len(ann_headers):
+            header = ann_headers[i]
+            detail = ann_details[i]
+            ap_label = aps[header]
+            i += 1
+            if header.startswith("<"):
+                continue
+            field = build_form_field("text", ap_label, None, False, value=detail)
+            if not field:
+                logging.warning("Could not build field for property: " + ap_label)
+                continue
+            metadata_html.extend(field)
+
+        logic_html = []
+        # TODO: these are not including anon classes, wait for thick triples?
+        # Maybe add subclass
+        if len(logic_details) == 1:
+            field = build_form_field("search", "parent class", None, False, value=logic_details[0])
+            if not field:
+                logging.warning("Could not build field for parent class")
+            else:
+                logic_html.extend(field)
+        # Maybe add equivalent class
+        if len(logic_details) == 2:
+            field = build_form_field(
+                "search", "equivalent class", None, False, value=logic_details[1]
+            )
+            if not field:
+                logging.warning("Could not build field for equivalent class")
+            else:
+                logic_html.extend(field)
+
+        if label and " " in label:
+            # Encase in single quotes when label has a space
+            label = f"'{label}'"
+        return render_template(
+            "edit-term.html",
+            title=f"Update " + label or term_id,
+            metadata="\n".join(metadata_html),
+            logic="\n".join(logic_html),
+            message=message,
+            user=True,
+        )
 
     elif fname.startswith(TEMPLATES_DIR):
         # Get the template name & its fields
@@ -430,7 +666,7 @@ def view_diff(name):
                         contents.append("")
                 rows.append(contents)
     return render_template(
-        "diff.html",
+        "table.html",
         filename=os.path.join(dir_display, name + ".tsv"),
         headers=headers,
         rows=rows,
@@ -542,7 +778,7 @@ def add_to_import(user_id, ns, term_id, args):
 
     db = os.path.join(DATABASE_DIR, ns + ".db")
     if not os.path.exists(db):
-        abort(500, f"A database for {ns} does not exist")
+        abort(500, f"A database for {ns} does not exist at {db}")
 
     with sqlite3.connect(db) as conn:
         # Get a label to display in import file
@@ -562,7 +798,7 @@ def add_to_import(user_id, ns, term_id, args):
         if parent:
             obi_db = os.path.join(DATABASE_DIR, "obi.db")
             if not os.path.exists(obi_db):
-                abort(500, "A database for obi does not exist")
+                abort(500, f"A database for obi does not exist at {obi_db}")
             with sqlite3.connect(obi_db) as obi_conn:
                 obi_cur = obi_conn.cursor()
                 obi_cur.execute(
@@ -789,7 +1025,7 @@ def build_form_field(input_type, column, help_msg, required, value=None):
         selects = input_type.split("(", 1)[1].rstrip(")").split(", ")
         html.append(f'\t\t<select class="form-select" name="{field_name}">')
         for s in selects:
-            if s == value:
+            if value and s == value:
                 html.append(f'\t\t\t<option value="{s}" selected>{s}</option>')
             else:
                 html.append(f'\t\t\t<option value="{s}">{s}</option>')
@@ -888,17 +1124,12 @@ def commit_changes(user_id, repo, branch_name):
         elif c.file_type == "template":
             repo_path = "src/ontology/templates/" + c.file
         else:
-            # TODO - error?
             continue
         with open(f"build/{user_id}/{c.file}", "r") as f:
             content = f.read()
 
         logging.info("Updating " + repo_path)
         cur_file = repo.get_contents(repo_path, ref="refs/heads/" + OBI_BASE_BRANCH)
-
-        # TODO - these commits all come from the app, not the user
-        # is this a problem? When using the user access token,
-        # it says resource not available
         repo.update_file(
             path=repo_path,
             message="Update " + c.file,
@@ -1040,6 +1271,7 @@ def github_authorize_token(params):
 
 
 def locate_term(term_id):
+    # TODO - as we move code into OBI, replace this with the actual locate script
     for f in os.listdir(TEMPLATES_DIR):
         if not f.endswith(".tsv"):
             continue
@@ -1051,19 +1283,26 @@ def locate_term(term_id):
                 i += 1
                 if term_id == row.get("ontology ID"):
                     return fname, i
-    term_iri = "http://purl.obolibrary.org/obo/" + term_id.replace(":", "_")
     for f in os.listdir(IMPORTS_DIR):
         if not f.endswith(".tsv"):
             continue
         fname = os.path.join(IMPORTS_DIR, f)
-        i = 0
+        i = 1
         with open(fname, "r") as fr:
-            for line in fr.readlines():
+            reader = csv.DictReader(fr, delimiter="\t")
+            for row in reader:
                 i += 1
-                if not line:
-                    continue
-                if line.split(" ")[0].strip() == term_iri:
+                if row.get("ID") == term_id:
                     return fname, i
+    edit_db = os.path.join(DATABASE_DIR, "obi-edit.db")
+    if not os.path.exists(edit_db):
+        abort(400, "build/obi-edit.db must exist in DROID directory for term updating")
+    with sqlite3.connect(edit_db) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM statements WHERE stanza = ?", (term_id,))
+        res = cur.fetchone()
+        if res:
+            return "build/obi-edit.db", None
     return None, None
 
 
@@ -1071,7 +1310,7 @@ def render_tree(ns, term_id, message="", is_import=False, from_update=False):
     """Render the HTML tree for a given term (or top level, when term_id is None)."""
     db = os.path.join(DATABASE_DIR, ns + ".db")
     if not os.path.exists(db):
-        abort(500, f"A database for {ns} does not exist")
+        abort(500, f"A database for {ns} does not exist at {db}")
     conn = sqlite3.connect(db)
 
     base = "browse"
@@ -1102,21 +1341,20 @@ def render_tree(ns, term_id, message="", is_import=False, from_update=False):
 # ------------------------------- SQLALCHEMY CLASSES -------------------------------
 
 
-class User(Base):
+class Export(Base):
     """
-    Saved information for users that have been authenticated to the metadata editor.
-    Note that this table preserves historical data (data is not deleted on logout)
+    Saved information for the terms within export lists.
     """
 
-    __tablename__ = "users"
+    __tablename__ = "exports"
 
     id = Column(Integer, primary_key=True)
-    github_id = Column(Integer)
-    github_login = Column(String(255))
-    access_token = Column(String(255))
+    user_id = Column(Integer)
+    term_id = Column(String(255))
 
-    def __init__(self, github_id):
-        self.github_id = github_id
+    def __init__(self, user_id, term_id):
+        self.user_id = user_id
+        self.term_id = term_id
 
 
 class Change(Base):
@@ -1153,21 +1391,18 @@ class List(Base):
         self.name = name
 
 
-class ListData(Base):
+class User(Base):
     """
-    Saved information for the terms within export lists.
+    Saved information for users that have been authenticated to the metadata editor.
+    Note that this table preserves historical data (data is not deleted on logout)
     """
 
-    __tablename__ = "list_data"
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    list_id = Column(Integer)
-    term_id = Column(String(255))
-    source = Column(String(255))
-    related_entities = Column(String(255))
+    github_id = Column(Integer)
+    github_login = Column(String(255))
+    access_token = Column(String(255))
 
-    def __init__(self, list_id, term_id, source, related_entities):
-        self.list_id = list_id
-        self.term_id = term_id
-        self.source = source
-        self.related_entities = related_entities
+    def __init__(self, github_id):
+        self.github_id = github_id

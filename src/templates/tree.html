@@ -12,16 +12,26 @@
 </div>
 <div class="row justify-content-md-center">
   <div class="col-md-10 tree">
+      {% if user %}
       <div class="row">
           <div class="col-md-12">
-              <div class="float-end">
-                  <form action="/update">
-                      <input id="submitTermID" type="hidden" name="term" value="">
-                      <button id="submitUpdate" type="submit" class="btn btn-primary">Update Term</button>
-                  </form>
+              <div class="row float-end">
+                  <div class="col">
+                      <form method="POST">
+                          <input id="submitExportTermID" type="hidden" name="term" value="">
+                          <button id="submitExport" type="submit" class="btn btn-primary">Export</button>
+                      </form>
+                  </div>
+                  <div class="col">
+                      <form action="/update">
+                          <input id="submitUpdateTermID" type="hidden" name="term" value="">
+                          <button id="submitUpdate" type="submit" class="btn btn-primary">Update</button>
+                      </form>
+                  </div>
               </div>
           </div>
       </div>
+      {% endif %}
     {{ tree|safe }}
   </div>
 </div>
@@ -32,8 +42,12 @@
     if (termID === "browse") {
         let btn = document.getElementById("submitUpdate");
         btn.disabled = true;
+        btn = document.getElementById("submitExport");
+        btn.disabled = true;
     } else {
-        let input = document.getElementById("submitTermID");
+        let input = document.getElementById("submitUpdateTermID");
+        input.setAttribute("value", termID);
+        input = document.getElementById("submitExportTermID");
         input.setAttribute("value", termID);
     }
 </script>

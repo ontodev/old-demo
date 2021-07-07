@@ -143,7 +143,7 @@
                             <a class="nav-link" href="/browse">Browse OBI</a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Import Term</a>
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Browse Import</a>
                             <ul class="dropdown-menu">
                               <li><a class="dropdown-item" href="/import/chebi">Chemical Entities of Biological Interest</a></li>
                               <li><a class="dropdown-item" href="/import/cl">Cell Ontology</a></li>
@@ -164,6 +164,7 @@
                               <li><a class="dropdown-item" href="/import/vo">"Vaccine Ontology"</a></li>
                             </ul>
                         </li>
+                        {% if user %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Add Term</a>
                             <ul class="dropdown-menu">
@@ -182,8 +183,12 @@
                             </ul>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="/export">Export</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="/submit">Submit</a>
                         </li>
+                        {% endif %}
                     </ul>
                     {% if user %}
                     <form class="d-flex" action="/logout">

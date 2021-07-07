@@ -1,4 +1,4 @@
-table	column	condition	required	category	input type	help
+table	column	property	required	category	input type	help
 *	ontology ID		true	metadata	text	A new, unique OBI ID. Use <a href="https://docs.google.com/spreadsheets/d/1tpDrSiO1DlEqkvZjrDSJrMm7OvH9GletljaR-SDeMTI">Term ID Reservations</a> to get the latest ID.
 *	label		true	metadata	text	A new, unique text label describing the term.
 *	alternative term			metadata	text	One or more synonyms separated by a pipe (|)
@@ -8,23 +8,22 @@ table	column	condition	required	category	input type	help
 *	term editor		true	metadata	text	One or more names of the term editors separated by a pipe (|)
 *	ontology term requester			metadata	text	The name of the person or group who requested the term.
 *	term tracker item			metadata	text	A link to the GitHub issue tracker where the term was requested.
-*	logical type		true	logic	select(subclass, equivalent)	The type of axiom created from logical defintions.
-assays	parent class			logic	search	The direct, named parent class for this new term.
-assays	material processing technique			logic	search	
-assays	detection technique			logic	search	
+*	logical type		true	logic	select(subclass, equivalent, )	The type of axiom created from logical defintions. Select blank for instances.
+assays|biopsy|devices|epitope-assays|medical-history|sample-collection|study-designs|sequence-analysis|value-specifications	parent class			logic	search	The direct, named parent class for this new term.
+assays|epitope-assays	material processing technique			logic	search	
+assays|epitope-assays	detection technique			logic	search	
 assays	evaluant			logic	search	
 assays	analyte			logic	search	
 assays	device			logic	search	
-assays	reagent			logic	search	
+assays|epitope-assays	reagent			logic	search	
 assays	molecular label			logic	search	
-assays	input			logic	search	
-assays	output			logic	search	
-assays	target entity			logic	search	
-assays	objective			logic	search	
+assays|epitope-assays|sequence-analysis	input			logic	search	
+assays|epitope-assays|sequence-analysis	output			logic	search	
+assays|epitope-assays	target entity			logic	search	
+assays|study-designs|sequence-analysis	objective			logic	search	
 assays	associated axioms			logic	textarea	Extra logical axioms to include as subclass or equivalent statements. These must be in <a href="https://www.w3.org/TR/owl2-manchester-syntax/">Manchester Syntax</a>.
 biobank-specimens|biopsy	material anatomical entity			logic	search	
 biobank-specimens	swabbed surface			logic	search	
-biopsy	parent class			logic	search	
 biopsy	input device			logic	search	
 biopsy	output entity			logic	search	
 devices	parent class			logic	search	
@@ -33,3 +32,18 @@ devices	has part			logic	search
 devices	part of			logic	search	
 devices	is manufactured by			logic	search	
 devices	associated axioms			logic	search	
+epitope-assays	MHC source			logic	search	
+epitope-assays	unit			logic	search	
+obsolete	parent class		true	logic	select(Obsolete Class)	
+obsolete	obsolete		true	metadata	select(true)	Terms in the obsolete template should always be marked "true"
+obsolete	obsolescence reason			metadata	select(failed exploratory term, placeholder removed, term imported, term split, terms merged)	
+obsolete	term replaced by			metadata	search	
+sample-collection	specimen type			logic	search	
+study-designs	independent variable			logic	search	
+study-designs	dependent variable			logic	search	
+study-designs	assay			logic	search	
+study-designs	associated superclasses			logic	textarea	
+study-designs	associated equivalent classes			logic	textarea	
+sequence-analysis	input of			logic	search	
+sequence-analysis	output of			logic	search	
+value-specifications	type			logic	search	For instances only: the class type
